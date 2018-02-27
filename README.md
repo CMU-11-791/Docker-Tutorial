@@ -2,25 +2,51 @@
 
 This is an example project that implements a number of services running in Docker containers that communicate via RabbitMQ message queues.  The goal of this tutorial is to demonstrate implementing a service and deploying it via Docker using the same classes and framework used for the BioASQ Summarization challenge.
 
+## Prerequisites
+
 ## TL;DR  (Too Long ; Didn't Read)
 
 1. Clone the repository<br/>
-```
-git clone https://github.com/cmu-11-791/Docker-Tutorial.git
-cd Docker-Tutorial
-```
+   `git clone https://github.com/cmu-11-791/Docker-Tutorial.git`<br/>
+   `cd Docker-Tutorial`
 1. Create a virtual environment and activate it.<br/>
+  `virtualenv .venv`<br/>
+  `source .venv/bin/activate`
+1. Install the *deiis* module<br/>
+  `cd deiis`<br/>
+  `python setup.py install`<br/>
+  `cd ../`
+1. Build the Docker images<br/>
+  `make`
+1. Start the RabbitMQ server<br/>
+  `docker run -d -p 5672:5672 -p 15672:15672 --hostname deiss --name rabbit rabbitmq:3-management`
+1. Start the containers<br/>
+  `./start.sh`
+1. Run a pipeline<br/>
+  `python pipeline.py one two three two one print`
+1. Stop all the containers<br/>
+  `./stop.sh`
+1. View the output<br/>
+  `cat /tmp/deiis-tutorial.log`
+
+
 ```
+git clone https://github.com/cmu-11-791/Docker-Tutorial.git<br/>
+cd Docker-Tutorial
 virtualenv .venv
 source .venv/bin/activate
-```
-1. Install the *deiis* module<br/>
-```
 cd deiis
 python setup.py install
+cd ../
+make
+docker run -d -p 5672:5672 -p 15672:15672 --hostname deiss --name rabbit rabbitmq:3-management
+./start.sh
+python pipeline.py one two three two one print
+./stop.sh
+cat /tmp/deiis-tutorial.log
 ```
 
-## Prerequisites
+## Setup
 
 It is recommended that you create a *virtual environment* for this project.
 
