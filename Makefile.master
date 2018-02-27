@@ -12,5 +12,5 @@ push:
 	docker push $(TAG)
 
 run:
-	docker run -it --rm --name $(NAME) -e HOST=$(HOST) $(IMAGE) /bin/bash
+	docker run -it --rm --name $(NAME) -e HOST=$(RABBIT_HOST) $(IMAGE) /bin/bash
 

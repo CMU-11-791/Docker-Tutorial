@@ -1,10 +1,28 @@
 # Docker Tutorial
 
-This is an example project that implements a number of services running in Docker containers that communicate via RabbitMQ message queues.  The goal of this tutorial is to demonstrate implementing a service and deploying it via Docker with
+This is an example project that implements a number of services running in Docker containers that communicate via RabbitMQ message queues.  The goal of this tutorial is to demonstrate implementing a service and deploying it via Docker using the same classes and framework used for the BioASQ Summarization challenge.
+
+## TL;DR  (Too Long ; Didn't Read)
+
+1. Clone the repository<br/>
+```
+git clone https://github.com/cmu-11-791/Docker-Tutorial.git
+cd Docker-Tutorial
+```
+1. Create a virtual environment and activate it.<br/>
+```
+virtualenv .venv
+source .venv/bin/activate
+```
+1. Install the *deiis* module<br/>
+```
+cd deiis
+python setup.py install
+```
 
 ## Prerequisites
 
-It is recommended that you create a *VirtualEnv* for this project.
+It is recommended that you create a *virtual environment* for this project.
 
 ```
 $> virtualenv .venv
@@ -30,15 +48,15 @@ Once the RabbitMQ server has started you can login to its management console at 
 
 ### Get The IP Address of RabbitMQ
 
-Services running on the same machine as the RabbitMQ server can access the server via *localhost*.  However, services running inside Docker containers are **not** on the *same machine* as the RabbitMQ server.  That is, for services running in a Docker container *localhost* is the Docker container, not the machine running the Docker container.  Therefore we need to know what IP address has assigned to the RabbitMQ server.  Services running in Docker will be able to access RabbitMQ via this IP address.
+Services running on the same machine as the RabbitMQ server can access the server via *localhost*.  However, services running inside Docker containers are **not** on the *same machine* as the RabbitMQ server.  That is, for services running in a Docker container *localhost* is the Docker container, not the machine running the Docker container.  Therefore we need to know what IP address Docker has assigned to the RabbitMQ server.  Services running in Docker will be able to access RabbitMQ via this IP address.
 
-To view information on the network that Docker has created.
+To view information about the network that Docker has created use the `docker network inspect` command:
 
 ```
 docker network inspect bridge
 ```
 
-In the JSON that is displayed will be a *Containers* section with information about each running container.  In particular we need to make a note of the *IPv4Address* assigned to our *rabbit* container.
+Look for the *Containers* section in the displayed JSON which contains information about each running container.  In particular we need to make a note of the *IPv4Address* assigned to our *rabbit* container.
 
 ```json
 "Containers": {
@@ -56,7 +74,13 @@ Here we can see that Docker has assigned the IP address 172.17.0.2 to my RabbitM
 
 ## Project Layout
 
-TDB
+Each service lives in its own directory and all services contain the following files:
+
+* Dockerfile
+* Makefile
+* service.py
+* ServiceN.py
+
 
 ## Building The Project
 
@@ -78,6 +102,8 @@ $> docker run -d -e HOST=$RABBIT_HOST --name three tutorial/three
 $> docker run -d -e HOST=$RABBIT_HOST --name printer -v /tmp:/var/log tutorial/printer
 ```
 
+The `-v /tmp:/var/log` parameter used when starting the tutorial/printer container mounts the `/tmp` directory on the machine running Docker as `/var/log` in the Docker container.
+
 A Bash script is also provided that starts all of the containers.
 
 ```
@@ -86,6 +112,7 @@ $> ./start.sh
 
 ### Running A Pipeline
 
+The `pipeline.py` script creates a `Message` object
 ```
 python pipeline.py one two three two one one three print
 ```

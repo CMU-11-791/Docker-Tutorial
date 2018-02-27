@@ -1,8 +1,8 @@
 from deiis.rabbit import Task
 
-class One(Task):
+class Service1(Task):
     def __init__(self, host='localhost'):
-        super(One, self).__init__('one', host=host)
+        super(Service1, self).__init__('one', host=host)
 
     def perform(self, message):
         print 'processing message'

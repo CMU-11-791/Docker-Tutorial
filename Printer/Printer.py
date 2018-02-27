@@ -1,7 +1,7 @@
 from deiis.rabbit import Task
 
 import logging
-logging.basicConfig()
+logging.basicConfig(filename='printer.log', level=logging.DEBUG)
 
 
 class Printer(Task):
@@ -11,6 +11,7 @@ class Printer(Task):
 
     def perform(self, message):
         self.logger.info('Printing message')
+        print message
         fp = open("/var/log/deiis-tutorial.log", 'a')
         fp.write(message)
         fp.write('\n')

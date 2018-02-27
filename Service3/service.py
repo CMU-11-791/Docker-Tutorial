@@ -1,5 +1,5 @@
 import os, sys
-from Three import Three
+from Service3 import Service3
 
 if __name__ == '__main__':
     host = os.environ.get('HOST', 'localhost')
@@ -8,7 +8,7 @@ if __name__ == '__main__':
             host = sys.argv[1]
 
     print "Host is " + host
-    service = Three(host=host)
+    service = Service3(host=host)
     print('Staring ' + service.__class__.__name__)
     service.start()
 
