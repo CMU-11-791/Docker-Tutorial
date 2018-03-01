@@ -13,7 +13,7 @@ This tutorial assumes that you have [Docker installed](https://store.docker.com/
 
 git clone https://github.com/cmu-11-791/Docker-Tutorial.git [1]
 cd Docker-Tutorial
-virtualenv .venv                                            [2]
+virtualenv -p python2.7 .venv                               [2]
 source .venv/bin/activate
 cd deiis                                                    [3]
 python setup.py install
@@ -29,8 +29,8 @@ cat /tmp/deiis-tutorial.log                                 [9]
 1. Clone the repository<br/>
    `git clone https://github.com/cmu-11-791/Docker-Tutorial.git`<br/>
    `cd Docker-Tutorial`
-1. Create a virtual environment and activate it. (Note that the syntax below assumes that your default virtual environment is Python 2).<br/>
-  `virtualenv .venv`<br/>
+1. Create a virtual environment and activate it. Note that the project requires Python 2.7 so we need to ensure the virtual environment is created with the proper interpreter.<br/>
+  `virtualenv -p python2.7 .venv`<br/>
   `source .venv/bin/activate`
 1. Install the *deiis* module<br/>
   `cd deiis`<br/>
@@ -69,7 +69,7 @@ You can use the `./cleanup.sh` script to delete all stopped containers.
 It is recommendeded that you create a *virtual environment* for this project and then install the *deiis* package.
 
 ```
-$> virtualenv .venv
+$> virtualenv -p python2.7 .venv
 $> source .venv/bin/activate
 $> cd deiis
 $> python setup.py install
@@ -133,16 +133,38 @@ The service implementation.
 
 The *Dockerfile*, *Makefile*, and *service.py* files are almost identical across all projects.
 
-## Building The Project
+## Building The Services
 
-Each module (service) contains a *Makefile* that is used to build the Docker image for the service:
+The `docker build` command is used to create a Docker image from the Dockerfile definition.
 
 ```
-$> cd Service1
-$> make
+docker build -t image_name` .
 ```
 
-The top level of the project also contains a Makefile will simply calls *make* for each of the services.
+The above command will create a Docker image named *image_name*. **Note** the period at the end of the `docker build` command.  This specifies that the current directory is to be used as the build context directory, that is, the directory containing the Dockerfile.
+
+For this project we will be building four Docker images:
+
+1. tutorial/one
+1. tutorial/two
+1. tutorial/three
+1. tutorial/printer
+
+You can run the `docker build` command manually in each project directory, or you can use the `make` to run the Docker command for you.
+
+```
+cd Service1
+docker build -t tutorial/one .
+```
+
+- or -
+
+```
+cd Service1
+make
+```
+
+The top level of the project also contains a Makefile that simply calls *make* for each of the services in turn.
 
 ## Running The Services
 
@@ -153,7 +175,7 @@ $> docker run -d -e HOST=$RABBIT_HOST --name three tutorial/three
 $> docker run -d -e HOST=$RABBIT_HOST --name printer -v /tmp:/var/log tutorial/printer
 ```
 
-The `-v /tmp:/var/log` parameter used when starting the tutorial/printer container mounts the `/tmp` directory on the machine running Docker as `/var/log` in the Docker container.
+The `-v /tmp:/var/log` parameter used when starting the tutorial/printer container mounts the `/tmp` directory on the machine running Docker as `/var/log` in the Docker container.  Since the `printer` service writes its output to the /var/log directory this will cause the output to appear in the /tmp directory on the host machine.
 
 A Bash script is also provided that starts all of the containers.
 
@@ -164,6 +186,7 @@ $> ./start.sh
 ### Running A Pipeline
 
 The `pipeline.py` script creates a [Message](https://github.com/CMU-11-791/Docker-Tutorial/blob/master/deiis/deiis/rabbit.py#L33) object with the list of parameters as the *route* (list of services) the message will be sent to.
+
 ```
 python pipeline.py one two three two one one three print
 ```
@@ -173,7 +196,7 @@ python pipeline.py one two three two one one three print
 
 The easiest way to stop all the services is to simply kill the Docker containers.  However, the problem with this is that the containers/services are not shutdown cleanly and a service may be terminated before it has finished processing all of its messages.
 
-The correct way to terminate a service is to send it a *poison pill*, which is just a known message that services listen for to indicate they are to stop processing messages and terminate.  Use the `stop.s` script to send the poison pill to all services:
+The correct way to terminate a service is to send it a *poison pill*, which is just a known message that services listen for to indicate they are to stop processing messages and terminate.  Use the `stop.sh` script to send the poison pill to all services:
 
 ```
 $> ./stop.sh
@@ -185,4 +208,5 @@ To stop individual services use the *stop.py* script and specify just the messag
 $> ./stop.py one printer
 ```
 
-**Note:** The `stop.sh` script simply calls `stop.py` and then removes the Docker containers.
+**Note:** The `stop.sh` script simply calls `stop.py` and then removes the Docker containers.  You can also use the `cleanup.sh` script to remove all stopped containers.
+
