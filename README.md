@@ -29,7 +29,7 @@ cat /tmp/deiis-tutorial.log                                 [9]
 1. Clone the repository<br/>
    `git clone https://github.com/cmu-11-791/Docker-Tutorial.git`<br/>
    `cd Docker-Tutorial`
-1. Create a virtual environment and activate it.<br/>
+1. Create a virtual environment and activate it. (Note that the syntax below assumes that your default virtual environment is Python 2).<br/>
   `virtualenv .venv`<br/>
   `source .venv/bin/activate`
 1. Install the *deiis* module<br/>
