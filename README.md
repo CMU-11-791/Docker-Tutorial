@@ -4,7 +4,27 @@ This is an example project that implements a number of services running in Docke
 
 ## Prerequisites
 
+This tutorial assumes that you have [Docker installed](https://store.docker.com/search?type=edition&offering=community) on your machine.
+
 ## TL;DR  (Too Long ; Didn't Read)
+
+```
+#!/usr/bin/env bash
+
+git clone https://github.com/cmu-11-791/Docker-Tutorial.git [1]
+cd Docker-Tutorial
+virtualenv .venv                                            [2]
+source .venv/bin/activate
+cd deiis                                                    [3]
+python setup.py install
+cd ../
+make                                                        [4]
+docker run -d -p 5672:5672 -p 15672:15672 --hostname deiss --name rabbit rabbitmq:3-management [5]
+./start.sh                                                  [6]
+python pipeline.py one two three two one print              [7]
+./stop.sh                                                   [8]
+cat /tmp/deiis-tutorial.log                                 [9]
+```
 
 1. Clone the repository<br/>
    `git clone https://github.com/cmu-11-791/Docker-Tutorial.git`<br/>
@@ -29,37 +49,31 @@ This is an example project that implements a number of services running in Docke
 1. View the output<br/>
   `cat /tmp/deiis-tutorial.log`
 
+**Troubleshooting**
+
+The above should work in the majority of instances.  However, the `start.sh` script expects that Docker will assign the IP address 172.17.0.2 to the RabbitMQ server, which it usually does. If the containers are not starting [check the IP address assigned to the RabbitMQ server](#rabbit-ip).
+
+If Docker reports an error about a container name already in use you will need to delete (rm) that container before running it again.
 
 ```
-git clone https://github.com/cmu-11-791/Docker-Tutorial.git<br/>
-cd Docker-Tutorial
-virtualenv .venv
-source .venv/bin/activate
-cd deiis
-python setup.py install
-cd ../
-make
-docker run -d -p 5672:5672 -p 15672:15672 --hostname deiss --name rabbit rabbitmq:3-management
-./start.sh
-python pipeline.py one two three two one print
-./stop.sh
-cat /tmp/deiis-tutorial.log
+docker: Error response from daemon: Conflict. The container name "XYZ" is already in use by container
+$> docker rm XYZ
 ```
+
+You can use the `./cleanup.sh` script to delete all stopped containers.
+
+# The Long Version
 
 ## Setup
 
-It is recommended that you create a *virtual environment* for this project.
+It is recommendeded that you create a *virtual environment* for this project and then install the *deiis* package.
 
 ```
 $> virtualenv .venv
 $> source .venv/bin/activate
-```
-
-Then we need to install the *deiis* package which contains classes for managing RabbitMQ message queues.
-
-```
 $> cd deiis
 $> python setup.py install
+$> cd -
 ```
 
 ## Start RabbitMQ
@@ -72,6 +86,7 @@ docker run -d -p 5672:5672 -p 15672:15672 --hostname deiss --name rabbit rabbitm
 
 Once the RabbitMQ server has started you can login to its management console at http://localhost:15672 (username: *guest*, password: *guest*). We won't be using the RabbitMQ management console, but it is useful to check if your services are connected to the server and watch how many messages are flowing through the server.
 
+<a name='rabbit-ip'></a>
 ### Get The IP Address of RabbitMQ
 
 Services running on the same machine as the RabbitMQ server can access the server via *localhost*.  However, services running inside Docker containers are **not** on the *same machine* as the RabbitMQ server.  That is, for services running in a Docker container *localhost* is the Docker container, not the machine running the Docker container.  Therefore we need to know what IP address Docker has assigned to the RabbitMQ server.  Services running in Docker will be able to access RabbitMQ via this IP address.
@@ -96,17 +111,27 @@ Look for the *Containers* section in the displayed JSON which contains informati
 }
 ```
 
-Here we can see that Docker has assigned the IP address 172.17.0.2 to my RabbitMQ server.  This is the IP address that services running in a Docker container will use to access the RabbitMQ server.
+Here we can see that Docker has assigned the IP address 172.17.0.2 to my RabbitMQ server.  This is the IP address that services running in a Docker container will use to access the RabbitMQ server.  We will store the IP address in an environment variable that the `start.sh` script will pass to to the Docker containers.
+
+```
+export RABBIT_HOST=172.17.0.2
+```
+
 
 ## Project Layout
 
 Each service lives in its own directory and all services contain the following files:
 
-* Dockerfile
-* Makefile
-* service.py
-* ServiceN.py
+* **Dockerfile**<br/>
+Copies all *.py files to /root and then sets the ENTRYPOINT to call the service.py script.
+* **Makefile**<br/>
+Defines goals for building and running the Docker container.
+* **service.py**<br/>
+Start up script used to launch the service.  This is the entrypoint for Docker containers or it can be invoked from the command line.
+* **ServiceN.py**<br/>
+The service implementation.
 
+The *Dockerfile*, *Makefile*, and *service.py* files are almost identical across all projects.
 
 ## Building The Project
 
@@ -138,7 +163,7 @@ $> ./start.sh
 
 ### Running A Pipeline
 
-The `pipeline.py` script creates a `Message` object
+The `pipeline.py` script creates a [Message](https://github.com/CMU-11-791/Docker-Tutorial/blob/master/deiis/deiis/rabbit.py#L33) object with the list of parameters as the *route* (list of services) the message will be sent to.
 ```
 python pipeline.py one two three two one one three print
 ```
@@ -146,14 +171,18 @@ python pipeline.py one two three two one one three print
 ### Stopping The Services
 
 
-Send the poison pill (shutdown message) to all services:
+The easiest way to stop all the services is to simply kill the Docker containers.  However, the problem with this is that the containers/services are not shutdown cleanly and a service may be terminated before it has finished processing all of its messages.
+
+The correct way to terminate a service is to send it a *poison pill*, which is just a known message that services listen for to indicate they are to stop processing messages and terminate.  Use the `stop.s` script to send the poison pill to all services:
 
 ```
-$> ./stop.py
+$> ./stop.sh
 ```
 
-Stop individual services by specifying just the message queues that the poison pill should be sent toL
+To stop individual services use the *stop.py* script and specify just the message queues that the poison pill should be sent to:
 
 ```
 $> ./stop.py one printer
 ```
+
+**Note:** The `stop.sh` script simply calls `stop.py` and then removes the Docker containers.
