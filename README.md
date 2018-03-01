@@ -157,7 +157,7 @@ cd Service1
 docker build -t tutorial/one .
 ```
 
-- or -
+or
 
 ```
 cd Service1
